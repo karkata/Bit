@@ -1,2 +1,2 @@
 # Bit
-The JavaScript library for hashing, do something with binaries.
+The JavaScript library for hashing, doing something with binaries.
