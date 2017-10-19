@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8"/>
+    <script src="../js/bit.js"></script>
+    <script>
+        function hashFile() {
+            var files = document.querySelector("#file").files;
+            if (files.length == 0) { 
+                alert("Please, choose a file");
+                return;
+            } else {
+                document.querySelector("#btnHash").disabled = "disabled";
+            }
+
+            var rd = new FileReader();
+            rd.addEventListener("load", function () {
+                var dv = new DataView(rd.result);
+                var hex = Bit.hex(Bit.md5(dv, 0, dv.byteLength));
+                document.querySelector("#output").innerHTML = hex + "<br/>";
+                document.querySelector("#btnHash").disabled = ""
+            ;});
+            rd.readAsArrayBuffer(files[0]);
+        }
+
+        window.addEventListener("load", function () {
+            document.querySelector("#btnHash").addEventListener("click", hashFile);
+        });
+    </script>
+</head>
+<body>
+    <div>
+        <p><input type="file" name="file" id="file"/></p>
+        <p><button type="button" id="btnHash">Hash</button>
+        <p id="output"></p>
+    </div>
+</body>
+</html>
+

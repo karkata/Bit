@@ -4,9 +4,11 @@
 }
 
 (function (win) {
-    "use strict";
+    //"use strict";
 
-    function leftRotate(x, c) { return (x << c) || (x >>> (32 - c)); }
+    function leftRotate(x, c) { 
+        return (x << c) | (x >>> (32 - c));
+    }
 
     function zerofill(s) {
         if (s instanceof DataView) {
@@ -61,7 +63,7 @@
         return dv;
     }
 
-    // 4294967296*sin(i) 테이블 생성
+    // 4294967296 * sin(i) table creation
     var K = new Uint32Array([
         0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE,
         0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
@@ -81,7 +83,7 @@
         0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391
     ]);
 
-    // per-round shift 양
+    // per-round shift amount
     var R = [
         7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
         5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
@@ -89,5 +91,121 @@
         6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
     ];
 
+    if (typeof Bit.copydv !== "function") {
+        Bit.copydv = function (src, soffset, dst, doffset, len) {
+            if (!(src instanceof DataView)) throw new Error("The 'src' parameter should be a instance of the DataView.");
+            if (!(dst instanceof DataView)) throw new Error("The 'dst' parameter should be a instance of the DataView.");
+            for (var i = 0; i < len; i++) dst.setUint8(doffset + i, src.getUint8(soffset + i));
+        };
+    }
+
+    if (typeof Bit.md5 !== "function") {
+        Bit.md5 = function (src, offset, len) {
+            if (!(src instanceof DataView)) throw new Error("The 'src' parameter should be a instance of the DataView.");
+            var tlen = Math.min(len, (src.byteLength - offset));
+            var nlen = 0;
+            for (nlen = (tlen << 3) + 1; nlen % 512 != 448; nlen++);
+            nlen += 64;
+            nlen = nlen >>> 3;
+            var tcnt = (tlen % 64 == 0) ? (tlen / 64) : (parseInt(tlen / 64) + 1);
+            var ncnt = nlen / 64;
+
+            var hs = new Uint32Array(4);
+            hs[0] = 0x67452301;
+            hs[1] = 0xEFCDAB89;
+            hs[2] = 0x98BADCFE;
+            hs[3] = 0x10325476;
+
+            var op = new Uint32Array(6);
+            var a = 0, b = 0, c = 0, d = 0, temp = 0, g = 0;
+            var buf = new DataView(new ArrayBuffer(64));
+            var bbit = false;
+            var readLen = 0;
+
+            for (var i = 0; i < ncnt; i++) {
+
+                zerofill(buf);
+
+                readLen = Math.min(tlen - (i * 64), 64);
+
+                if (i < tcnt) {
+                    this.copydv(src, offset + (i * 64), buf, 0, readLen);
+                }
+
+                if (i + 1 == tcnt && readLen < 64) {
+                    buf.setUint8(readLen, 0x80);
+                    bbit = true;
+                }
+
+                if (i + 1 == ncnt) {
+                    if (bbit == false) {
+                        buf.setUint8(readLen, 0x80);
+                        bbit = true;
+                    }
+
+                    num64todv(tlen << 3, buf, 56);
+                }
+
+                var block = new Uint32Array(buf.buffer);
+
+                a = hs[0];
+                b = hs[1];
+                c = hs[2];
+                d = hs[3];
+
+                for (var j = 0; j < 64; j++) {
+                    if (j < 16) {
+                        op[0] = (b & c) | ((~b) & d);
+                        g = j;
+                    } else if (j < 32) {
+                        op[0] = (b & d) | (c & (~d));
+                        g = (5 * j + 1) % 16;
+                    } else if (j < 48) {
+                        op[0] = b ^ c ^ d;
+                        g = (3 * j + 5) % 16;
+                    } else {
+                        op[0] = c ^ (b | (~d));
+                        g = (7 * j) % 16;
+                    }
+
+                    temp = d;
+                    d = c;
+                    c = b;
+                    op[1] = (a + op[0] + K[j] + block[g]) >>> 32;
+                    op[2] = leftRotate(op[1], R[j]) >>> 32;
+                    b = (b + op[2]) >>> 32;
+                    a = temp;
+                }
+                
+                hs[0] = hs[0] + a;
+                hs[1] = hs[1] + b;
+                hs[2] = hs[2] + c;
+                hs[3] = hs[3] + d;
+            }
+
+            return get16dv(hs[0], hs[1], hs[2], hs[3]);
+        };
+    }
+
+    if (typeof Bit.hex !== "function") {
+        Bit.hex = function (src, delimeter) {
+            if (src instanceof DataView) {
+                var append = "";
+                for (var i = 0; i < src.byteLength; i++) {
+                    if (i > 0 && delimeter) append += delimeter;
+                    append += ("00" + src.getUint8(i).toString(16)).slice(-2);
+                }
+                return append;
+            } else if (Object.prototype.toString.call(src) === "[object Array]") {
+                return src.map(function (v, i) {
+                    var hex = v.toString(16);
+                    return (hex.length % 2 != 0) ? "0" + hex : hex;
+                }).join(delimeter);
+            } else {
+                var hex = src.toString(16);
+                return (hex.length % 2 != 0) ? "0" + hex : hex;
+            }
+        };
+    }
 
 })(window);
