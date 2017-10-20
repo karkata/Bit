@@ -25,8 +25,8 @@
 
             var f = files[0], remain = f.size, i = 0, hope = 0, chunk = null, pms = [];
             for (i = 0; remain > 0; i += hope) {
-                // 6400 - 9 = 6391;
-                hope = Math.min(6391, remain);
+                // 64000 - 9 = 63991;
+                hope = Math.min(63991, remain);
                 chunk = f.slice(i, i + hope);
                 remain -= hope;
                 pms.push(md5(chunk));

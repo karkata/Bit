@@ -116,8 +116,7 @@
             hs[2] = 0x98BADCFE;
             hs[3] = 0x10325476;
 
-            var op = new Uint32Array(6);
-            var a = 0, b = 0, c = 0, d = 0, temp = 0, g = 0;
+            var a = 0, b = 0, c = 0, d = 0, f = 0, tmp0 = 0, g = 0, tmp1 = 0, tmp2 = 0;
             var buf = new DataView(new ArrayBuffer(64));
             var bbit = false;
             var readLen = 0;
@@ -155,26 +154,26 @@
 
                 for (var j = 0; j < 64; j++) {
                     if (j < 16) {
-                        op[0] = (b & c) | ((~b) & d);
+                        f = (b & c) | ((~b) & d);
                         g = j;
                     } else if (j < 32) {
-                        op[0] = (b & d) | (c & (~d));
+                        f = (b & d) | (c & (~d));
                         g = (5 * j + 1) % 16;
                     } else if (j < 48) {
-                        op[0] = b ^ c ^ d;
+                        f = b ^ c ^ d;
                         g = (3 * j + 5) % 16;
                     } else {
-                        op[0] = c ^ (b | (~d));
+                        f = c ^ (b | (~d));
                         g = (7 * j) % 16;
                     }
 
-                    temp = d;
+                    tmp0 = d;
                     d = c;
                     c = b;
-                    op[1] = (a + op[0] + K[j] + block[g]) >>> 32;
-                    op[2] = leftRotate(op[1], R[j]) >>> 32;
-                    b = (b + op[2]) >>> 32;
-                    a = temp;
+                    tmp1 = (a + f + K[j] + block[g]) >>> 32;
+                    tmp2 = leftRotate(tmp1, R[j]) >>> 32;
+                    b = (b + tmp2) >>> 32;
+                    a = tmp0;
                 }
                 
                 hs[0] = hs[0] + a;
