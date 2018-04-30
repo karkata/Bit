@@ -12,7 +12,7 @@ Bit 프로젝트는 DataView 기반의 바이너리 정보를 해싱하는 기�
 ### Browser
 bit.js 파일을 연결하는 것이 전부이다.
 <pre>
-&lt;script src="{path}/bit.js"&gt;&lt;/script&gt;
+&lt;script src=".../bit.js"&gt;&lt;/script&gt;
 </pre>
 
 ## 사용 방법
@@ -24,9 +24,11 @@ bit.js 파일을 연결하는 것이 전부이다.
 var input = new DataView(...);
 // Bit.md5는 입력값으로부터 해싱된 결과를 16바이트 길이를 갖는 DataView 객체를 반환한다.
 var hashed = Bit.md5(input, 0, input.byteLength);
-// DataView 객체 정보를 16진수 문자열로 만들어 반환한다.
+// DataView 객체 정보를 32자의 16진수 문자열로 만들어 반환한다.
 var output = Bit.hex(hashed);
 </pre>
+
+md5 함수는 비동기로 동작하지 않으므로, 비동기 작업으로 해싱 처리를 해야 한다면, setTimeout이나 promise를 사용하는 것을 권한다.
 
 ## 업데이트 내역
 ### 1.0.0 (2018-04-26)
@@ -35,7 +37,7 @@ var output = Bit.hex(hashed);
 ## 라이선스
 Apache 2.0
 
-## Credit
+## 참고
 - [creationix/md5.c](https://gist.github.com/creationix/4710780)
 - [MD5/Implementation](https://rosettacode.org/wiki/MD5/Implementation#C.23)
 
